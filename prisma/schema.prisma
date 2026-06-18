@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum OrderStatus {
+  DRAFT
+  CONFIRMED
+  FULFILLED
+  CANCELLED
+}
+
+enum StockMovementType {
+  STOCK_IN
+  STOCK_OUT
+  ADJUSTMENT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  
+  // Relations
+  createdOrders SalesOrder[]
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  sku          String   @unique
+  name         String
+  description  String?
+  category     String?
+  unit         String   // e.g., "pcs", "kg"
+  costPrice    Decimal  @db.Decimal(10, 2)
+  sellPrice    Decimal  @db.Decimal(10, 2)
+  // DESIGN DECISION: currentStock is a cached, read-optimized value. 
+  // The absolute source of truth is the sum of related StockMovement entries. 
+  // This field is updated atomically by the backend whenever a StockMovement is created, 
+  // preventing expensive SUM() queries on every page load while maintaining auditability.
+  currentStock Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  stockMovements StockMovement[]
+  orderItems     OrderItem[]
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  orders SalesOrder[]
+}
+
+model SalesOrder {
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique // e.g., "SO-0001"
+  customerId    String
+  status        OrderStatus @default(DRAFT)
+  total         Decimal     @db.Decimal(10, 2) @default(0)
+  createdById   String
+  createdAt     DateTime    @default(now())
+
+  // Relations
+  customer  Customer    @relation(fields: [customerId], references: [id])
+  createdBy User        @relation(fields: [createdById], references: [id])
+  items     OrderItem[]
+  stockMovements StockMovement[] // Optional link for STOCK_OUT movements tied to this order
+}
+
+model OrderItem {
+  id            String  @id @default(cuid())
+  salesOrderId  String
+  productId     String
+  quantity      Int
+  unitPrice     Decimal @db.Decimal(10, 2)
+  lineTotal     Decimal @db.Decimal(10, 2)
+
+  // Relations
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id])
+}
+
+model StockMovement {
+  id             String            @id @default(cuid())
+  productId      String
+  type           StockMovementType
+  quantity       Int               // Positive for IN, negative for OUT/ADJUSTMENT (or store as absolute and use type)
+  reason         String
+  relatedOrderId String?           // Nullable relation to SalesOrder if this movement was caused by a sale
+  createdAt      DateTime          @default(now())
+
+  // Relations
+  product      Product      @relation(fields: [productId], references: [id])
+  salesOrder   SalesOrder?  @relation(fields: [relatedOrderId], references: [id])
+}
