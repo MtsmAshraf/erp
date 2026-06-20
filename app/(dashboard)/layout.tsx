@@ -18,15 +18,15 @@ export default async function DashboardLayout({
       {/* Sidebar */}
       <aside className="w-64 bg-gray-900 text-gray-300">
         <div className="flex h-16 items-center border-b border-gray-800 px-6">
-          <span className="text-lg font-bold text-white">ERP System</span>
+          <span className="text-lg font-bold text-white">Smart Generation ERP</span>
         </div>
         <nav className="mt-6 space-y-1 px-3">
           <SidebarLink href="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
-          <SidebarLink href="/dashboard/products" icon={<Package size={20} />} label="Products" />
-          <SidebarLink href="/dashboard/customers" icon={<Users size={20} />} label="Customers" />
-          <SidebarLink href="/dashboard/sales-orders" icon={<FileText size={20} />} label="Sales Orders" />
+          <SidebarLink href="/products" icon={<Package size={20} />} label="Products" />
+          <SidebarLink href="/customers" icon={<Users size={20} />} label="Customers" />
+          <SidebarLink href="/sales-orders" icon={<FileText size={20} />} label="Sales Orders" />
           {isAdmin && (
-            <SidebarLink href="/dashboard/users" icon={<UserCog size={20} />} label="User Management" />
+            <SidebarLink href="/users" icon={<UserCog size={20} />} label="User Management" />
           )}
         </nav>
       </aside>
