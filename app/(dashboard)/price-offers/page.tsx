@@ -65,7 +65,11 @@ export default async function PriceOffersPage() {
               offers.map((offer) => (
                 <tr key={offer.id} className="hover:bg-gray-50">
                   <td className="whitespace-nowrap px-6 py-4 text-sm font-bold text-gray-900">{offer.offerNumber}</td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{offer.customer.name}</td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm">
+                    <Link href={`/customers/${offer.customer.id}`} className="text-blue-600 hover:text-blue-900">
+                      {offer.customer.name}
+                    </Link>
+                  </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{offer.createdBy.name}</td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{offer.createdAt.toLocaleDateString()}</td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">${offer.total.toNumber().toFixed(2)}</td>

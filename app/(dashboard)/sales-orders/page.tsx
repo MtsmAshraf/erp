@@ -82,7 +82,11 @@ export default async function SalesOrdersPage({ searchParams }: { searchParams: 
               orders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="whitespace-nowrap px-6 py-4 text-sm font-bold text-gray-900">{order.orderNumber}</td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{order.customer.name}</td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm">
+                    <Link href={`/customers/${order.customer.id}`} className="text-blue-600 hover:text-blue-900">
+                      {order.customer.name}
+                    </Link>
+                  </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{order.createdAt.toLocaleDateString()}</td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">${order.total.toNumber().toFixed(2)}</td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm">

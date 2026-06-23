@@ -16,7 +16,6 @@ export default async function NewProductPage() {
       </div>
 
       <div className="rounded-lg border bg-white p-6 shadow-sm">
-        {/* The 'action' prop points directly to our Server Action */}
         <form action={createProduct} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -54,7 +53,7 @@ export default async function NewProductPage() {
             <textarea name="description" rows={3} className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
           </div>
 
-          <div className="grid grid-cols-2 gap-4 border-t pt-6">
+          <div className="border-t pt-6">
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">
                 Cost Price {isStaff && <span className="text-xs text-gray-400">(Admin only)</span>}
@@ -68,10 +67,6 @@ export default async function NewProductPage() {
                 className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500" 
                 placeholder="0.00" 
               />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Sell Price *</label>
-              <input name="sellPrice" type="number" step="0.01" min="0" required className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="0.00" />
             </div>
           </div>
 

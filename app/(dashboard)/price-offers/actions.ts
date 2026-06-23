@@ -33,11 +33,14 @@ export async function addOfferItem(formData: FormData) {
   const priceOfferId = formData.get("priceOfferId") as string
   const productId = formData.get("productId") as string
   const quantity = parseInt(formData.get("quantity") as string)
+  const unitPrice = parseFloat(formData.get("unitPrice") as string)
+
+  if (!unitPrice || unitPrice <= 0) throw new Error("Unit price must be greater than 0")
 
   const product = await prisma.product.findUnique({ where: { id: productId } })
   if (!product) throw new Error("Product not found")
 
-  const lineTotal = product.sellPrice.toNumber() * quantity
+  const lineTotal = unitPrice * quantity
 
   await prisma.$transaction(async (tx) => {
     await tx.priceOfferItem.create({
@@ -45,7 +48,7 @@ export async function addOfferItem(formData: FormData) {
         priceOfferId,
         productId,
         quantity,
-        unitPrice: product.sellPrice,
+        unitPrice,
         lineTotal
       }
     })

@@ -63,8 +63,47 @@ export async function createProduct(formData: FormData) {
 /**
  * Adds or removes stock for an existing product.
  */
+// export async function adjustStock(formData: FormData) {
+//   await requireRole("ADMIN") // Only Admins can adjust stock manually
+//   const productId = formData.get("productId") as string
+//   const type = formData.get("type") as "STOCK_IN" | "STOCK_OUT" | "ADJUSTMENT"
+//   const quantity = parseInt(formData.get("quantity") as string)
+//   const reason = formData.get("reason") as string
+
+//   if (!productId || !quantity || quantity <= 0) return
+
+//   // Calculate the actual change to apply to currentStock
+//   // IN adds, OUT/ADJUSTMENT subtracts
+//   const stockChange = type === "STOCK_IN" ? quantity : -quantity
+
+//   await prisma.$transaction(async (tx) => {
+//     // 1. Create the immutable ledger entry
+//     await tx.stockMovement.create({
+//       data: {
+//         productId,
+//         type,
+//         quantity, // Store the absolute quantity in the ledger
+//         reason,
+//       },
+//     })
+
+//     // 2. Update the cached currentStock on the product
+//     await tx.product.update({
+//       where: { id: productId },
+//       data: {
+//         currentStock: {
+//           increment: stockChange, // Atomically add/subtract
+//         },
+//       },
+//     })
+//   })
+
+//   revalidatePath(`/products/${productId}`)
+//   redirect(`/products/${productId}`)
+// }
+
 export async function adjustStock(formData: FormData) {
-  await requireRole("ADMIN") // Only Admins can adjust stock manually
+  await requireRole("ADMIN")
   const productId = formData.get("productId") as string
   const type = formData.get("type") as "STOCK_IN" | "STOCK_OUT" | "ADJUSTMENT"
   const quantity = parseInt(formData.get("quantity") as string)
@@ -72,27 +111,36 @@ export async function adjustStock(formData: FormData) {
 
   if (!productId || !quantity || quantity <= 0) return
 
-  // Calculate the actual change to apply to currentStock
-  // IN adds, OUT/ADJUSTMENT subtracts
+  // Get current product to check if adjustment would make stock negative
+  const product = await prisma.product.findUnique({ where: { id: productId } })
+  if (!product) throw new Error("Product not found")
+
   const stockChange = type === "STOCK_IN" ? quantity : -quantity
+  const newStock = product.currentStock + stockChange
+
+  // PREVENT NEGATIVE STOCK
+  if (newStock < 0) {
+    throw new Error(
+      `Cannot apply this adjustment. Current stock is ${product.currentStock} ${product.unit}. ` +
+      `This adjustment would result in negative stock (${newStock} ${product.unit}).`
+    )
+  }
 
   await prisma.$transaction(async (tx) => {
-    // 1. Create the immutable ledger entry
     await tx.stockMovement.create({
       data: {
         productId,
         type,
-        quantity, // Store the absolute quantity in the ledger
+        quantity,
         reason,
       },
     })
 
-    // 2. Update the cached currentStock on the product
     await tx.product.update({
       where: { id: productId },
       data: {
         currentStock: {
-          increment: stockChange, // Atomically add/subtract
+          increment: stockChange,
         },
       },
     })
@@ -100,4 +148,28 @@ export async function adjustStock(formData: FormData) {
 
   revalidatePath(`/products/${productId}`)
   redirect(`/products/${productId}`)
+}
+
+
+
+export async function deleteProduct(formData: FormData) {
+  await requireRole("ADMIN") // Only admins can delete products
+  const productId = formData.get("productId") as string
+
+  // Check if product has any related records
+  const [orderItemCount, offerItemCount, movementCount] = await Promise.all([
+    prisma.orderItem.count({ where: { productId } }),
+    prisma.priceOfferItem.count({ where: { productId } }),
+    prisma.stockMovement.count({ where: { productId } }),
+  ])
+
+  if (orderItemCount > 0 || offerItemCount > 0 || movementCount > 0) {
+    throw new Error(
+      `Cannot delete this product. It has ${orderItemCount} order items, ${offerItemCount} offer items, and ${movementCount} stock movements. ` +
+      `Products with history cannot be deleted.`
+    )
+  }
+
+  await prisma.product.delete({ where: { id: productId } })
+  revalidatePath("/products")
 }

@@ -31,31 +31,30 @@ export async function addOrderItem(formData: FormData) {
   const salesOrderId = formData.get("salesOrderId") as string
   const productId = formData.get("productId") as string
   const quantity = parseInt(formData.get("quantity") as string)
+  const unitPrice = parseFloat(formData.get("unitPrice") as string)
+
+  if (!unitPrice || unitPrice <= 0) throw new Error("Unit price must be greater than 0")
 
   const product = await prisma.product.findUnique({ where: { id: productId } })
   if (!product) throw new Error("Product not found")
 
-  const lineTotal = product.sellPrice.toNumber() * quantity
+  const lineTotal = unitPrice * quantity
 
   await prisma.$transaction(async (tx) => {
-    // 1. Add the line item
     await tx.orderItem.create({
       data: {
         salesOrderId,
         productId,
         quantity,
-        unitPrice: product.sellPrice,
+        unitPrice,
         lineTotal
       }
     })
 
-    // 2. Update the order total
     await tx.salesOrder.update({
       where: { id: salesOrderId },
       data: {
-        total: {
-          increment: lineTotal
-        }
+        total: { increment: lineTotal }
       }
     })
   })

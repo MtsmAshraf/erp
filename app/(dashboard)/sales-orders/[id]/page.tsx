@@ -74,7 +74,7 @@ export default async function SalesOrderDetailsPage({ params }: { params: Promis
                   <option value="">Select a product...</option>
                   {products.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({p.sku}) - Stock: {p.currentStock}
+                      {p.name} ({p.sku}) - Stock: {p.currentStock} - Cost: ${p.costPrice.toNumber().toFixed(2)}
                     </option>
                   ))}
                 </select>
@@ -83,12 +83,20 @@ export default async function SalesOrderDetailsPage({ params }: { params: Promis
                 <label className="mb-1 block text-sm font-medium text-gray-700">Qty</label>
                 <input name="quantity" type="number" min="1" required className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
               </div>
+              <div className="w-40">
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Unit Price *
+                  <span className="ml-1 text-xs text-gray-500">(Suggested: ${order.customer.salePercentage.toNumber() > 0 ? `cost + ${order.customer.salePercentage.toNumber()}%` : 'enter manually'})</span>
+                </label>
+                <input name="unitPrice" type="number" step="0.01" min="0.01" required className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="0.00" />
+              </div>
               <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
                 Add Item
               </button>
             </form>
           </div>
         )}
+
 
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">

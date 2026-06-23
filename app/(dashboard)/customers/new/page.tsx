@@ -33,6 +33,22 @@ export default async function NewCustomerPage() {
           </div>
 
           <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Sale Percentage (Markup %) 
+              <span className="ml-1 text-xs text-gray-500">e.g., 20 = 20% markup on cost price</span>
+            </label>
+            <input 
+              name="salePercentage" 
+              type="number" 
+              step="0.01" 
+              min="0" 
+              defaultValue="0"
+              className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+              placeholder="0.00"
+            />
+          </div>
+
+          <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">Address</label>
             <textarea name="address" rows={3} className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
           </div>

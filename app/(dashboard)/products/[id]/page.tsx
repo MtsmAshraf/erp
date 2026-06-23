@@ -2,24 +2,21 @@ import { prisma } from "@/app/lib/prisma"
 import { requireRole } from "@/app/lib/auth-utils"
 import { notFound } from "next/navigation"
 import { adjustStock } from "../actions"
+import { DeleteProductButton } from "../DeleteProductButton"
 import Link from "next/link"
 
-// FIX: Next.js 15 requires `params` to be typed as a Promise
 export default async function ProductDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  // FIX: We must await the params object to get the actual ID
-  const { id } = await params;
-
+  const { id } = await params
   const session = await requireRole("ADMIN", "STAFF")
   const isStaff = session.user.role === "STAFF"
   const isAdmin = session.user.role === "ADMIN"
 
-  // Fetch product and its stock movements
   const product = await prisma.product.findUnique({
-    where: { id: id }, // Now using the correctly awaited ID
+    where: { id },
     include: {
       stockMovements: {
         orderBy: { createdAt: "desc" },
-        take: 20, // Show last 20 movements
+        take: 20,
       },
     },
   })
@@ -32,18 +29,16 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
         <Link href="/products" className="text-sm text-blue-600 hover:underline">
           ← Back to Products
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">{product.name} ({product.sku})</h1>
+        <div className="mt-2 flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">{product.name} ({product.sku})</h1>
+          {isAdmin && <DeleteProductButton productId={product.id} />}
+        </div>
       </div>
 
-      {/* Product Summary Cards */}
-      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-lg border bg-white p-4 shadow-sm">
           <p className="text-sm text-gray-500">Current Stock</p>
           <p className="text-2xl font-bold text-gray-900">{product.currentStock} {product.unit}</p>
-        </div>
-        <div className="rounded-lg border bg-white p-4 shadow-sm">
-          <p className="text-sm text-gray-500">Sell Price</p>
-          <p className="text-2xl font-bold text-gray-900">${product.sellPrice.toNumber().toFixed(2)}</p>
         </div>
         {!isStaff && (
           <div className="rounded-lg border bg-white p-4 shadow-sm">
@@ -58,7 +53,6 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Stock Adjustment Form (Admin Only) */}
         {isAdmin && (
           <div className="lg:col-span-1">
             <h2 className="mb-4 text-lg font-bold text-gray-900">Adjust Stock</h2>
@@ -93,7 +87,6 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
           </div>
         )}
 
-        {/* Stock Ledger / History */}
         <div className={isAdmin ? "lg:col-span-2" : "lg:col-span-3"}>
           <h2 className="mb-4 text-lg font-bold text-gray-900">Stock Movement Ledger</h2>
           <div className="overflow-hidden rounded-lg border bg-white shadow-sm">

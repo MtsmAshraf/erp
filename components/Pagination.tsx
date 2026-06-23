@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 interface PaginationProps {
   totalItems: number
   currentPage: number
-  baseUrl: string // e.g., "/dashboard/products"
+  baseUrl: string // e.g., "/products"
   searchQuery?: string // To persist the search term across pages
 }
 

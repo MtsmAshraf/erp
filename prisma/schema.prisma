@@ -56,7 +56,7 @@ model Product {
   category     String?
   unit         String   // e.g., "pcs", "kg"
   costPrice    Decimal  @db.Decimal(10, 2)
-  sellPrice    Decimal  @db.Decimal(10, 2)
+  // sellPrice    Decimal  @db.Decimal(10, 2)
   // DESIGN DECISION: currentStock is a cached, read-optimized value. 
   // The absolute source of truth is the sum of related StockMovement entries. 
   // This field is updated atomically by the backend whenever a StockMovement is created, 
@@ -79,6 +79,7 @@ model Customer {
   email     String?
   phone     String?
   address   String?
+  salePercentage Decimal  @db.Decimal(5, 2) @default(0) // Markup percentage (e.g., 20.00 = 20%)
   createdAt DateTime @default(now())
 
   // Relations

@@ -1,35 +1,31 @@
 import { prisma } from "@/app/lib/prisma"
-import { Prisma } from "@prisma/client"
 import { requireRole } from "@/app/lib/auth-utils"
 import { Pagination } from "@/components/Pagination"
 import { PAGE_SIZE } from "@/app/lib/pagination"
 import Link from "next/link"
 import { Search } from "lucide-react"
+import { DeleteProductButton } from "./DeleteProductButton"
 
-// Next.js 15 requires searchParams to be a Promise
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const session = await requireRole("ADMIN", "STAFF")
   const isStaff = session.user.role === "STAFF"
+  const isAdmin = session.user.role === "ADMIN"
   
-  // 1. Read URL parameters
   const params = await searchParams
   const currentPage = Number(params.page) || 1
   const searchQuery = (params.search as string) || ""
 
-  // 2. Build Prisma Where Clause
-  const where: Prisma.ProductWhereInput = searchQuery
-    ? {
-        OR: [
-          { name: { contains: searchQuery, mode: "insensitive" as Prisma.QueryMode } },
-          { sku: { contains: searchQuery, mode: "insensitive" as Prisma.QueryMode } },
-        ],
-      }
-    : {}
 
-  // 3. Fetch data and total count in parallel
   const [products, totalItems] = await Promise.all([
     prisma.product.findMany({
-      where,
+      where: searchQuery
+        ? {
+          OR: [
+            { name: { contains: searchQuery, mode: "insensitive" } },
+            { sku: { contains: searchQuery, mode: "insensitive" } },
+          ],
+        }
+        : {},
       orderBy: { createdAt: "desc" },
       skip: (currentPage - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -39,11 +35,17 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         name: true,
         unit: true,
         currentStock: true,
-        sellPrice: true,
-        costPrice: !isStaff,
+        costPrice: true,
       },
     }),
-    prisma.product.count({ where }),
+    prisma.product.count({ where: searchQuery
+        ? {
+          OR: [
+            { name: { contains: searchQuery, mode: "insensitive" } },
+            { sku: { contains: searchQuery, mode: "insensitive" } },
+          ],
+        }
+        : {} }),
   ])
 
   return (
@@ -58,7 +60,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         </Link>
       </div>
 
-      {/* Search Bar */}
       <div className="mb-4">
         <form className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -69,7 +70,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
             placeholder="Search by name or SKU..."
             className="w-full rounded-md border border-gray-300 py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
-          {/* Hidden submit button for accessibility, or it submits on Enter */}
           <button type="submit" className="sr-only">Search</button>
         </form>
       </div>
@@ -81,7 +81,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">SKU</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Stock</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Sell Price</th>
               {!isStaff && (
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Cost Price</th>
               )}
@@ -91,8 +90,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
           <tbody className="divide-y divide-gray-200 bg-white">
             {products.length === 0 ? (
               <tr>
-                <td colSpan={isStaff ? 5 : 6} className="px-6 py-8 text-center text-gray-500">
-                  No products found matching "{searchQuery}".
+                <td colSpan={isStaff ? 4 : 5} className="px-6 py-8 text-center text-gray-500">
+                  No products found.
                 </td>
               </tr>
             ) : (
@@ -109,18 +108,16 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                       {product.currentStock} {product.unit}
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
-                    ${product.sellPrice.toNumber().toFixed(2)}
-                  </td>
                   {!isStaff && (
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                      ${product.costPrice?.toNumber().toFixed(2) || "0.00"}
+                      ${product.costPrice.toNumber().toFixed(2)}
                     </td>
                   )}
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm space-x-3">
                     <Link href={`/products/${product.id}`} className="text-blue-600 hover:text-blue-900">
-                      View Details
+                      View
                     </Link>
+                    {isAdmin && <DeleteProductButton productId={product.id} />}
                   </td>
                 </tr>
               ))
@@ -129,7 +126,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         </table>
       </div>
       
-      {/* Pagination Footer */}
       <Pagination 
         totalItems={totalItems} 
         currentPage={currentPage} 

@@ -12,11 +12,31 @@ export async function createCustomer(formData: FormData) {
   const email = formData.get("email") as string
   const phone = formData.get("phone") as string
   const address = formData.get("address") as string
+  const salePercentage = parseFloat(formData.get("salePercentage") as string) || 0
 
   await prisma.customer.create({
-    data: { name, email, phone, address }
+    data: { name, email, phone, address, salePercentage }
   })
 
   revalidatePath("/customers")
   redirect("/customers")
+}
+export async function updateCustomer(formData: FormData) {
+  await requireRole("ADMIN", "STAFF")
+  
+  const customerId = formData.get("customerId") as string
+  const name = formData.get("name") as string
+  const email = formData.get("email") as string
+  const phone = formData.get("phone") as string
+  const address = formData.get("address") as string
+  const salePercentage = parseFloat(formData.get("salePercentage") as string) || 0
+
+  await prisma.customer.update({
+    where: { id: customerId },
+    data: { name, email, phone, address, salePercentage }
+  })
+
+  revalidatePath(`/customers/${customerId}`)
+  revalidatePath("/customers")
+  redirect(`/customers/${customerId}`)
 }
