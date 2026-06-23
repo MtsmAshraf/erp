@@ -1,7 +1,8 @@
 import { prisma } from "@/app/lib/prisma"
+import { Prisma } from "@prisma/client"
 import { requireRole } from "@/app/lib/auth-utils"
 import { Pagination } from "@/components/Pagination"
-import { PAGE_SIZE, calculatePagination } from "@/app/lib/pagination"
+import { PAGE_SIZE } from "@/app/lib/pagination"
 import Link from "next/link"
 import { Search } from "lucide-react"
 
@@ -16,11 +17,11 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
   const searchQuery = (params.search as string) || ""
 
   // 2. Build Prisma Where Clause
-  const where = searchQuery
+  const where: Prisma.ProductWhereInput = searchQuery
     ? {
         OR: [
-          { name: { contains: searchQuery, mode: "insensitive" } },
-          { sku: { contains: searchQuery, mode: "insensitive" } },
+          { name: { contains: searchQuery, mode: "insensitive" as Prisma.QueryMode } },
+          { sku: { contains: searchQuery, mode: "insensitive" as Prisma.QueryMode } },
         ],
       }
     : {}

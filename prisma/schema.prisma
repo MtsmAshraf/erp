@@ -24,6 +24,14 @@ enum StockMovementType {
   ADJUSTMENT
 }
 
+enum OfferStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  CONVERTED_TO_ORDER
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -34,6 +42,10 @@ model User {
   
   // Relations
   createdOrders SalesOrder[]
+
+  
+  createdOffers  PriceOffer[] @relation("OfferCreator")
+  approvedOffers PriceOffer[] @relation("OfferApprover")
 }
 
 model Product {
@@ -56,6 +68,9 @@ model Product {
   // Relations
   stockMovements StockMovement[]
   orderItems     OrderItem[]
+
+  priceOfferItems PriceOfferItem[]
+
 }
 
 model Customer {
@@ -68,6 +83,9 @@ model Customer {
 
   // Relations
   orders SalesOrder[]
+
+  priceOffers PriceOffer[]
+
 }
 
 model SalesOrder {
@@ -111,4 +129,37 @@ model StockMovement {
   // Relations
   product      Product      @relation(fields: [productId], references: [id])
   salesOrder   SalesOrder?  @relation(fields: [relatedOrderId], references: [id])
+}
+
+model PriceOffer {
+  id                   String      @id @default(cuid())
+  offerNumber          String      @unique // e.g., "PO-0001"
+  customerId           String
+  status               OfferStatus @default(DRAFT)
+  total                Decimal     @db.Decimal(10, 2) @default(0)
+  createdById          String      // The sales person who created it
+  approvedById         String?     // The admin who approved it (nullable)
+  convertedOrderNumber String?     // The SO-XXXX number if converted (nullable)
+  notes                String?     // Optional notes/terms for the offer
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  // Relations
+  customer   Customer           @relation(fields: [customerId], references: [id])
+  createdBy  User               @relation("OfferCreator", fields: [createdById], references: [id])
+  approvedBy User?              @relation("OfferApprover", fields: [approvedById], references: [id])
+  items      PriceOfferItem[]
+}
+
+model PriceOfferItem {
+  id           String  @id @default(cuid())
+  priceOfferId String
+  productId    String
+  quantity     Int
+  unitPrice    Decimal @db.Decimal(10, 2)
+  lineTotal    Decimal @db.Decimal(10, 2)
+
+  // Relations
+  priceOffer PriceOffer @relation(fields: [priceOfferId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id])
 }

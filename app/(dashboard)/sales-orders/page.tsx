@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma"
+import { Prisma } from "@prisma/client"
 import { requireRole } from "@/app/lib/auth-utils"
 import { Pagination } from "@/components/Pagination"
 import { PAGE_SIZE } from "@/app/lib/pagination"
@@ -12,11 +13,11 @@ export default async function SalesOrdersPage({ searchParams }: { searchParams: 
   const currentPage = Number(params.page) || 1
   const searchQuery = (params.search as string) || ""
 
-  const where = searchQuery
+  const where: Prisma.SalesOrderWhereInput = searchQuery
     ? {
         OR: [
-          { orderNumber: { contains: searchQuery, mode: "insensitive" } },
-          { customer: { name: { contains: searchQuery, mode: "insensitive" } } },
+          { orderNumber: { contains: searchQuery, mode: Prisma.QueryMode.insensitive } },
+          { customer: { name: { contains: searchQuery, mode: Prisma.QueryMode.insensitive } } },
         ],
       }
     : {}
