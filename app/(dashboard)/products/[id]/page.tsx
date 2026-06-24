@@ -1,8 +1,8 @@
 import { prisma } from "@/app/lib/prisma"
 import { requireRole } from "@/app/lib/auth-utils"
 import { notFound } from "next/navigation"
-import { adjustStock } from "../actions"
 import { DeleteProductButton } from "../DeleteProductButton"
+import { StockAdjustmentForm } from "../StockAdjustmentForm"
 import Link from "next/link"
 
 export default async function ProductDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -56,34 +56,7 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
         {isAdmin && (
           <div className="lg:col-span-1">
             <h2 className="mb-4 text-lg font-bold text-gray-900">Adjust Stock</h2>
-            <div className="rounded-lg border bg-white p-4 shadow-sm">
-              <form action={adjustStock} className="space-y-4">
-                <input type="hidden" name="productId" value={product.id} />
-                
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Movement Type</label>
-                  <select name="type" className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="STOCK_IN">Stock In (Purchase/Return)</option>
-                    <option value="STOCK_OUT">Stock Out (Damage/Loss)</option>
-                    <option value="ADJUSTMENT">Inventory Adjustment</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Quantity</label>
-                  <input name="quantity" type="number" min="1" required className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Reason</label>
-                  <input name="reason" required className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="e.g. Quarterly audit" />
-                </div>
-
-                <button type="submit" className="w-full rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-                  Apply Adjustment
-                </button>
-              </form>
-            </div>
+            <StockAdjustmentForm productId={product.id} />
           </div>
         )}
 

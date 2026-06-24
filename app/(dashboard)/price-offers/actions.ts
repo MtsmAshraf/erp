@@ -28,17 +28,28 @@ export async function createPriceOffer(formData: FormData) {
   redirect(`/price-offers/${offer.id}`)
 }
 
-export async function addOfferItem(formData: FormData) {
+export async function addOfferItem(prevState: { error: string | null }, formData: FormData) {
   await requireRole("ADMIN", "STAFF")
   const priceOfferId = formData.get("priceOfferId") as string
   const productId = formData.get("productId") as string
   const quantity = parseInt(formData.get("quantity") as string)
   const unitPrice = parseFloat(formData.get("unitPrice") as string)
 
-  if (!unitPrice || unitPrice <= 0) throw new Error("Unit price must be greater than 0")
+  if (!unitPrice || unitPrice <= 0) {
+    return { error: "Unit price must be greater than 0" }
+  }
 
   const product = await prisma.product.findUnique({ where: { id: productId } })
-  if (!product) throw new Error("Product not found")
+  if (!product) {
+    return { error: "Product not found" }
+  }
+
+  // VALIDATION: Check if requested quantity exceeds available stock
+  if (quantity > product.currentStock) {
+    return { 
+      error: `Insufficient stock for ${product.name}. Available: ${product.currentStock} ${product.unit}, Requested: ${quantity}.`
+    }
+  }
 
   const lineTotal = unitPrice * quantity
 
@@ -62,6 +73,7 @@ export async function addOfferItem(formData: FormData) {
   })
 
   revalidatePath(`/price-offers/${priceOfferId}`)
+  redirect(`/price-offers/${priceOfferId}`)
 }
 
 export async function removeOfferItem(formData: FormData) {

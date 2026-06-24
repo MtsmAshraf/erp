@@ -1,8 +1,9 @@
 import { prisma } from "@/app/lib/prisma"
 import { requireRole } from "@/app/lib/auth-utils"
 import { notFound } from "next/navigation"
-import { addOrderItem, removeOrderItem, confirmOrder } from "../actions"
+import { removeOrderItem, confirmOrder } from "../actions"
 import Link from "next/link"
+import { AddOrderItemForm } from "../AddOrderItemForm"
 
 export default async function SalesOrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -20,9 +21,12 @@ export default async function SalesOrderDetailsPage({ params }: { params: Promis
 
   if (!order) notFound()
 
-  const products = await prisma.product.findMany({
+  const products =( await prisma.product.findMany({
     orderBy: { name: "asc" }
-  })
+  })).map(product => ({
+  ...product,
+  costPrice: product.costPrice.toNumber(),
+}))
 
   const isDraft = order.status === "DRAFT"
 
@@ -65,36 +69,7 @@ export default async function SalesOrderDetailsPage({ params }: { params: Promis
         </div>
         
         {isDraft && (
-          <div className="border-b bg-gray-50 p-4">
-            <form action={addOrderItem} className="flex items-end gap-4">
-              <input type="hidden" name="salesOrderId" value={order.id} />
-              <div className="flex-1">
-                <label className="mb-1 block text-sm font-medium text-gray-700">Product</label>
-                <select name="productId" required className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                  <option value="">Select a product...</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.sku}) - Stock: {p.currentStock} - Cost: ${p.costPrice.toNumber().toFixed(2)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="w-32">
-                <label className="mb-1 block text-sm font-medium text-gray-700">Qty</label>
-                <input name="quantity" type="number" min="1" required className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
-              </div>
-              <div className="w-40">
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Unit Price *
-                  <span className="ml-1 text-xs text-gray-500">(Suggested: ${order.customer.salePercentage.toNumber() > 0 ? `cost + ${order.customer.salePercentage.toNumber()}%` : 'enter manually'})</span>
-                </label>
-                <input name="unitPrice" type="number" step="0.01" min="0.01" required className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="0.00" />
-              </div>
-              <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                Add Item
-              </button>
-            </form>
-          </div>
+          <AddOrderItemForm salesOrderId={order.id} products={products} />
         )}
 
 

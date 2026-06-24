@@ -10,6 +10,8 @@ import {
   convertToSalesOrder 
 } from "../actions"
 import Link from "next/link"
+import { AddOfferItemForm } from "../AddOfferItemForm"
+import { serializeCustomer } from "@/app/lib/utils"
 
 export default async function PriceOfferDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -30,7 +32,10 @@ export default async function PriceOfferDetailsPage({ params }: { params: Promis
 
   if (!offer) notFound()
 
-  const products = await (prisma as any).product.findMany({ orderBy: { name: "asc" } })
+  const products = (await (prisma as any).product.findMany({ orderBy: { name: "asc" } })).map((product: { costPrice: { toNumber: () => number } }) => ({
+    ...product,
+    costPrice: product.costPrice.toNumber()
+  }))
 
   const isDraft = offer.status === "DRAFT"
   const isPending = offer.status === "PENDING_APPROVAL"
@@ -106,36 +111,11 @@ export default async function PriceOfferDetailsPage({ params }: { params: Promis
         
         
         {canEdit && (
-          <div className="border-b bg-gray-50 p-4">
-            <form action={addOfferItem} className="flex items-end gap-4">
-              <input type="hidden" name="priceOfferId" value={offer.id} />
-              <div className="flex-1">
-                <label className="mb-1 block text-sm font-medium text-gray-700">Product</label>
-                <select name="productId" required className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                  <option value="">Select a product...</option>
-                  {products.map((p: typeof products[number]) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.sku}) - Cost: ${p.costPrice.toNumber().toFixed(2)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="w-32">
-                <label className="mb-1 block text-sm font-medium text-gray-700">Qty</label>
-                <input name="quantity" type="number" min="1" required className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
-              </div>
-              <div className="w-40">
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Unit Price *
-                  <span className="ml-1 text-xs text-gray-500">(Customer markup: {offer.customer.salePercentage.toNumber()}%)</span>
-                </label>
-                <input name="unitPrice" type="number" step="0.01" min="0.01" required className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="0.00" />
-              </div>
-              <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                Add Item
-              </button>
-            </form>
-          </div>
+          <AddOfferItemForm 
+            priceOfferId={offer.id} 
+            products={products} 
+            customer={serializeCustomer(offer.customer)}
+          />
         )}
 
         <table className="min-w-full divide-y divide-gray-200">
