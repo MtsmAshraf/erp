@@ -234,15 +234,16 @@ export async function deleteProduct(formData: FormData) {
   await requireRole("ADMIN")
   const productId = formData.get("productId") as string
 
-  const [orderItemCount, offerItemCount, movementCount] = await Promise.all([
+  const [orderItemCount, offerItemCount, movementCount, poItemCount] = await Promise.all([
     prisma.orderItem.count({ where: { productId } }),
     prisma.priceOfferItem.count({ where: { productId } }),
     prisma.stockMovement.count({ where: { productId } }),
+    prisma.purchaseOrderItem.count({ where: { productId } }),
   ])
 
-  if (orderItemCount > 0 || offerItemCount > 0 || movementCount > 0) {
+  if (orderItemCount > 0 || offerItemCount > 0 || movementCount > 0 || poItemCount > 0) {
     throw new Error(
-      `Cannot delete this product. It has ${orderItemCount} order items, ${offerItemCount} offer items, and ${movementCount} stock movements.`
+      `Cannot delete this product. It has related records in orders, offers, stock movements, or purchase orders.`
     )
   }
 

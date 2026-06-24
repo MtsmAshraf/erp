@@ -1,7 +1,7 @@
 import { auth, signOut } from "@/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { LayoutDashboard, Package, Users, FileText, UserCog, LogOut } from "lucide-react"
+import { LayoutDashboard, Package, Users, FileText, UserCog, LogOut, Truck, ShoppingCart } from "lucide-react"
 
 export default async function DashboardLayout({
   children,
@@ -24,8 +24,10 @@ export default async function DashboardLayout({
           <SidebarLink href="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
           <SidebarLink href="/products" icon={<Package size={20} />} label="Products" />
           <SidebarLink href="/customers" icon={<Users size={20} />} label="Customers" />
-          <SidebarLink href="/sales-orders" icon={<FileText size={20} />} label="Sales Orders" />
+          <SidebarLink href="/suppliers" icon={<Truck size={20} />} label="Suppliers" />
+          <SidebarLink href="/purchase-orders" icon={<ShoppingCart size={20} />} label="Purchase Orders" />
           <SidebarLink href="/price-offers" icon={<FileText size={20} />} label="Price Offers" />
+          <SidebarLink href="/sales-orders" icon={<FileText size={20} />} label="Sales Orders" />
           {isAdmin && (
             <SidebarLink href="/users" icon={<UserCog size={20} />} label="User Management" />
           )}
