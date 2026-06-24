@@ -24,7 +24,7 @@ export default async function PurchaseOrderDetailsPage({ params }: { params: Pro
 
   if (!po) notFound()
 
-  const products = await prisma.product.findMany({ orderBy: { name: "asc" } })
+  const products = (await prisma.product.findMany({ orderBy: { name: "asc" } })).map(p => serializeProduct(p))
   const isDraft = po.status === "DRAFT"
 
   return (
@@ -76,7 +76,7 @@ export default async function PurchaseOrderDetailsPage({ params }: { params: Pro
           <h2 className="text-lg font-bold text-gray-900">Items</h2>
         </div>
         
-        {isDraft && <AddPOItemForm purchaseOrderId={po.id} products={serializeProduct(serializeProduct)} />}
+        {isDraft && <AddPOItemForm purchaseOrderId={po.id} products={products} />}
 
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">

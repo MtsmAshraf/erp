@@ -7,6 +7,6 @@ export function serializeCustomer(customer: any) {
   return {
     ...product,
     costPrice: product.costPrice?.toNumber() ?? 0,
-    sellPrice: product.sellPrice?.toNumber() ?? 0,
+    // sellPrice: product.sellPrice?.toNumber() ?? 0,
   }
 }
