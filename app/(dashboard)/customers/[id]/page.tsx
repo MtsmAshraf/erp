@@ -106,7 +106,7 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
       <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-lg border border-green-200 bg-green-50 p-4">
           <p className="text-sm text-green-700">Total Revenue (Confirmed)</p>
-          <p className="mt-1 text-2xl font-bold text-green-900">${totalRevenue.toFixed(2)}</p>
+          <p className="mt-1 text-2xl font-bold text-green-900">{totalRevenue.toFixed(2)} EGP</p>
           <p className="text-xs text-green-700 mt-1">{confirmedOrdersCount} confirmed order{confirmedOrdersCount !== 1 ? "s" : ""}</p>
         </div>
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">

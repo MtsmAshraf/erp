@@ -115,7 +115,7 @@ export default async function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <FinancialStatCard
             title="Total Revenue"
-            value={`$${totalRevenue.toFixed(2)}`}
+            value={`${totalRevenue.toFixed(2)} EGP`}
             subtitle={`${confirmedSalesOrders} confirmed order${confirmedSalesOrders !== 1 ? "s" : ""}`}
             icon={<DollarSign className="text-green-600" size={20} />}
             bgColor="bg-green-50"
@@ -123,7 +123,7 @@ export default async function DashboardPage() {
           />
           <FinancialStatCard
             title="Total Purchases"
-            value={`$${totalPurchases.toFixed(2)}`}
+            value={`${totalPurchases.toFixed(2)} EGP`}
             subtitle={`${confirmedPurchaseOrders} confirmed PO${confirmedPurchaseOrders !== 1 ? "s" : ""}`}
             icon={<ShoppingCart className="text-blue-600" size={20} />}
             bgColor="bg-blue-50"
@@ -131,7 +131,7 @@ export default async function DashboardPage() {
           />
           <FinancialStatCard
             title="Gross Profit"
-            value={`$${grossProfit.toFixed(2)}`}
+            value={`${grossProfit.toFixed(2)} EGP`}
             subtitle={`${profitMargin.toFixed(1)}% margin`}
             icon={<TrendingUp className="text-purple-600" size={20} />}
             bgColor="bg-purple-50"

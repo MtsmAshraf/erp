@@ -43,7 +43,7 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
         {!isStaff && (
           <div className="rounded-lg border bg-white p-4 shadow-sm">
             <p className="text-sm text-gray-500">Cost Price</p>
-            <p className="text-2xl font-bold text-gray-900">${product.costPrice.toNumber().toFixed(2)}</p>
+            <p className="text-2xl font-bold text-gray-900">{product.costPrice.toNumber().toFixed(2)} EGP</p>
           </div>
         )}
         <div className="rounded-lg border bg-white p-4 shadow-sm">

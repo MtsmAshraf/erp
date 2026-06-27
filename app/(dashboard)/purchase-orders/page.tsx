@@ -51,7 +51,7 @@ export default async function PurchaseOrdersPage() {
                     </Link>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{po.createdAt.toLocaleDateString()}</td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">${po.total.toNumber().toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{po.total.toNumber().toFixed(2)} EGP</td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm">
                     <span className={`rounded-full px-2 py-1 text-xs font-semibold ${
                       po.status === "DRAFT" ? "bg-gray-100 text-gray-800" : 

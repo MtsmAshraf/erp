@@ -62,7 +62,7 @@ export default async function SupplierDetailsPage({ params }: { params: Promise<
         </div>
         <div className="rounded-lg border bg-white p-4 shadow-sm">
           <p className="text-sm text-gray-500">Total Spent (Confirmed)</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">${totalSpent.toFixed(2)}</p>
+          <p className="mt-1 text-2xl font-bold text-gray-900">{totalSpent.toFixed(2)} EGP</p>
           <p className="text-xs text-gray-500 mt-1">{supplier.purchaseOrders.length} purchase order(s)</p>
         </div>
       </div>
@@ -113,7 +113,7 @@ export default async function SupplierDetailsPage({ params }: { params: Promise<
                   <tr key={po.id} className="hover:bg-gray-50">
                     <td className="whitespace-nowrap px-4 py-3 text-sm font-bold text-gray-900">{po.poNumber}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{po.createdAt.toLocaleDateString()}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">${po.total.toNumber().toFixed(2)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">{po.total.toNumber().toFixed(2)} EGP</td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm">
                       <span className={`rounded-full px-2 py-1 text-xs font-semibold ${
                         po.status === "DRAFT" ? "bg-gray-100 text-gray-800" : 

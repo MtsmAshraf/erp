@@ -89,8 +89,8 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                 <td className="border border-gray-300 px-4 py-2 text-sm text-gray-900">{item.product.name}</td>
                 <td className="border border-gray-300 px-4 py-2 text-sm text-gray-600">{item.product.sku}</td>
                 <td className="border border-gray-300 px-4 py-2 text-sm text-right text-gray-900">{item.quantity}</td>
-                <td className="border border-gray-300 px-4 py-2 text-sm text-right text-gray-900">${item.unitPrice.toNumber().toFixed(2)}</td>
-                <td className="border border-gray-300 px-4 py-2 text-sm text-right text-gray-900">${item.lineTotal.toNumber().toFixed(2)}</td>
+                <td className="border border-gray-300 px-4 py-2 text-sm text-right text-gray-900">{item.unitPrice.toNumber().toFixed(2)} EGP</td>
+                <td className="border border-gray-300 px-4 py-2 text-sm text-right text-gray-900">{item.lineTotal.toNumber().toFixed(2)} EGP</td>
               </tr>
             ))}
           </tbody>
@@ -101,7 +101,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
           <div className="w-64">
             <div className="flex justify-between border-t-2 border-gray-900 pt-2 text-xl font-bold text-gray-900">
               <span>Total:</span>
-              <span>${order.total.toNumber().toFixed(2)}</span>
+              <span>{order.total.toNumber().toFixed(2)} EGP</span>
             </div>
           </div>
         </div>

@@ -60,7 +60,7 @@ export default async function PurchaseOrderDetailsPage({ params }: { params: Pro
         </div>
         <div className="rounded-lg border bg-white p-4 shadow-sm">
           <p className="text-sm text-gray-500">Total Cost</p>
-          <p className="text-2xl font-bold text-gray-900">${po.total.toNumber().toFixed(2)}</p>
+          <p className="text-2xl font-bold text-gray-900">{po.total.toNumber().toFixed(2)} EGP</p>
         </div>
       </div>
 
@@ -102,8 +102,8 @@ export default async function PurchaseOrderDetailsPage({ params }: { params: Pro
                   <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">{item.product.name}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{item.product.sku}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{item.quantity}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">${item.unitCost.toNumber().toFixed(2)}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">${item.lineTotal.toNumber().toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{item.unitCost.toNumber().toFixed(2)} EGP</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">{item.lineTotal.toNumber().toFixed(2)} EGP</td>
                   {isDraft && (
                     <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
                       <form action={removePOItem}>

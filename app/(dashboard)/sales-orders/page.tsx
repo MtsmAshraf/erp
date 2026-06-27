@@ -96,7 +96,7 @@ export default async function SalesOrdersPage({ searchParams }: { searchParams: 
                     </Link>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{order.createdAt.toLocaleDateString()}</td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">${order.total.toNumber().toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{order.total.toNumber().toFixed(2)} EGP</td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm">
                     <span className={`rounded-full px-2 py-1 text-xs font-semibold ${
                       order.status === "DRAFT" ? "bg-yellow-100 text-yellow-800" : 
