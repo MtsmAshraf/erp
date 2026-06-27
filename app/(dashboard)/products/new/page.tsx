@@ -26,7 +26,7 @@ export default async function NewProductPage() {
               <label className="mb-1 block text-sm font-medium text-gray-700">Unit *</label>
               <select name="unit" defaultValue="pcs" className="w-full rounded border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 <option value="pcs">Pieces (pcs)</option>
-                <option value="kg">Kilograms (kg)</option>
+                {/* <option value="kg">Kilograms (kg)</option> */}
                 <option value="box">Boxes (box)</option>
               </select>
             </div>
