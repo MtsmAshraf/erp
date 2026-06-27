@@ -1,10 +1,17 @@
 import { prisma } from "@/app/lib/prisma"
 import { requireRole } from "@/app/lib/auth-utils"
 import { createSalesOrder } from "../actions"
+import { redirect } from "next/navigation"
 import Link from "next/link"
 
 export default async function NewSalesOrderPage() {
-  await requireRole("ADMIN", "STAFF")
+  const session = await requireRole("ADMIN") // ONLY ADMIN
+  
+  // If somehow a STAFF user reaches this page, redirect them
+  if (session.user.role !== "ADMIN") {
+    redirect("/sales-orders")
+  }
+
   const customers = await prisma.customer.findMany({ orderBy: { name: "asc" } })
 
   return (

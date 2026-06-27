@@ -5,11 +5,10 @@ import { requireRole } from "@/app/lib/auth-utils"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-export async function   createSalesOrder(formData: FormData) {
-  const session = await requireRole("ADMIN", "STAFF")
+export async function createSalesOrder(formData: FormData) {
+  const session = await requireRole("ADMIN") // ONLY ADMIN can create directly
   const customerId = formData.get("customerId") as string
 
-  // Generate Order Number (Simple sequence based on current count)
   const count = await prisma.salesOrder.count()
   const orderNumber = `SO-${String(count + 1).padStart(4, '0')}`
 
@@ -27,7 +26,7 @@ export async function   createSalesOrder(formData: FormData) {
 }
 
 export async function addOrderItem(prevState: { error: string | null }, formData: FormData) {
-  await requireRole("ADMIN", "STAFF")
+  const session = await requireRole("ADMIN", "STAFF")
   const salesOrderId = formData.get("salesOrderId") as string
   const productId = formData.get("productId") as string
   const quantity = parseInt(formData.get("quantity") as string)
@@ -42,7 +41,6 @@ export async function addOrderItem(prevState: { error: string | null }, formData
     return { error: "Product not found" }
   }
 
-  // VALIDATION: Check if requested quantity exceeds available stock
   if (quantity > product.currentStock) {
     return { 
       error: `Insufficient stock for ${product.name}. Available: ${product.currentStock} ${product.unit}, Requested: ${quantity}.`
@@ -71,7 +69,7 @@ export async function addOrderItem(prevState: { error: string | null }, formData
   })
 
   revalidatePath(`/sales-orders/${salesOrderId}`)
-  redirect(`/sales-orders/${salesOrderId}`)
+  return { error: null }
 }
 
 export async function removeOrderItem(formData: FormData) {
@@ -88,9 +86,7 @@ export async function removeOrderItem(formData: FormData) {
     await tx.salesOrder.update({
       where: { id: salesOrderId },
       data: {
-        total: {
-          decrement: item.lineTotal.toNumber()
-        }
+        total: { decrement: item.lineTotal.toNumber() }
       }
     })
   })
@@ -109,41 +105,33 @@ export async function confirmOrder(formData: FormData) {
 
   if (!order || order.status !== "DRAFT") throw new Error("Invalid order")
 
-  // CRITICAL: Check stock availability for ALL items before doing anything
   for (const item of order.items) {
     if (item.product.currentStock < item.quantity) {
       throw new Error(`Insufficient stock for ${item.product.name}. Available: ${item.product.currentStock}, Requested: ${item.quantity}`)
     }
   }
 
-  // If we pass the check, execute the atomic transaction
   await prisma.$transaction(async (tx) => {
-    // 1. Update order status to CONFIRMED
     await tx.salesOrder.update({
       where: { id: salesOrderId },
       data: { status: "CONFIRMED" }
     })
 
-    // 2. Create stock movements and decrement stock for each item
     for (const item of order.items) {
-      // Create the immutable ledger entry
       await tx.stockMovement.create({
         data: {
           productId: item.productId,
           type: "STOCK_OUT",
           quantity: item.quantity,
           reason: `Sold via ${order.orderNumber}`,
-          relatedOrderId: salesOrderId // Links the stock drop directly to this order!
+          relatedOrderId: salesOrderId
         }
       })
 
-      // Decrement the cached stock level
       await tx.product.update({
         where: { id: item.productId },
         data: {
-          currentStock: {
-            decrement: item.quantity
-          }
+          currentStock: { decrement: item.quantity }
         }
       })
     }

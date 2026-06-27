@@ -1,18 +1,22 @@
 import { prisma } from "@/app/lib/prisma"
 import { requireRole } from "@/app/lib/auth-utils"
 import { notFound } from "next/navigation"
-import { removeOrderItem, confirmOrder } from "../actions"
-import Link from "next/link"
+import { addOrderItem, removeOrderItem, confirmOrder } from "../actions"
 import { AddOrderItemForm } from "../AddOrderItemForm"
+import Link from "next/link"
+import { serializeProduct } from "@/app/lib/utils"
 
 export default async function SalesOrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  await requireRole("ADMIN", "STAFF")
+  const session = await requireRole("ADMIN", "STAFF")
+  const isAdmin = session.user.role === "ADMIN"
 
   const order = await prisma.salesOrder.findUnique({
     where: { id },
     include: {
       customer: true,
+      createdBy: { select: { name: true } },
+      convertedFromOffer: { select: { offerNumber: true } },
       items: {
         include: { product: true }
       }
@@ -21,14 +25,16 @@ export default async function SalesOrderDetailsPage({ params }: { params: Promis
 
   if (!order) notFound()
 
-  const products =( await prisma.product.findMany({
+  const products = (await prisma.product.findMany({
     orderBy: { name: "asc" }
-  })).map(product => ({
-  ...product,
-  costPrice: product.costPrice.toNumber(),
-}))
+  })).map(product => serializeProduct(product))
 
   const isDraft = order.status === "DRAFT"
+  
+  // STAFF can only add items if:
+  // 1. The order was NOT created from a price offer, OR
+  // 2. The user is ADMIN
+  const canAddItems = isDraft && (isAdmin || !order.convertedFromOfferId)
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -48,10 +54,29 @@ export default async function SalesOrderDetailsPage({ params }: { params: Promis
         </div>
       </div>
 
+      {/* Info banner if order came from a price offer */}
+      {order.convertedFromOffer && (
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm text-blue-800">
+            <span className="font-semibold">ℹ️ Created from Price Offer:</span>{" "}
+            <Link href={`/price-offers/${order.convertedFromOfferId}`} className="underline font-bold hover:text-blue-900">
+              {order.convertedFromOffer.offerNumber}
+            </Link>
+            {!isAdmin && (
+              <span className="ml-2 text-xs">(Items are locked per the approved offer)</span>
+            )}
+          </p>
+        </div>
+      )}
+
       <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-lg border bg-white p-4 shadow-sm">
           <p className="text-sm text-gray-500">Customer</p>
-          <p className="text-lg font-semibold text-gray-900">{order.customer.name}</p>
+          <p className="text-lg font-semibold text-gray-900">
+            <Link href={`/customers/${order.customerId}`} className="text-blue-600 hover:text-blue-900">
+              {order.customer.name}
+            </Link>
+          </p>
         </div>
         <div className="rounded-lg border bg-white p-4 shadow-sm">
           <p className="text-sm text-gray-500">Date</p>
@@ -59,7 +84,7 @@ export default async function SalesOrderDetailsPage({ params }: { params: Promis
         </div>
         <div className="rounded-lg border bg-white p-4 shadow-sm">
           <p className="text-sm text-gray-500">Total</p>
-          <p className="text-2xl font-bold text-gray-900">{order.total.toNumber().toFixed(2)} EGP</p>
+          <p className="text-2xl font-bold text-gray-900">${order.total.toNumber().toFixed(2)}</p>
         </div>
       </div>
 
@@ -68,10 +93,19 @@ export default async function SalesOrderDetailsPage({ params }: { params: Promis
           <h2 className="text-lg font-bold text-gray-900">Order Items</h2>
         </div>
         
-        {isDraft && (
+        {canAddItems && (
           <AddOrderItemForm salesOrderId={order.id} products={products} />
         )}
 
+        {/* Message for STAFF when items are locked */}
+        {isDraft && !canAddItems && !isAdmin && (
+          <div className="border-b bg-yellow-50 p-4">
+            <p className="text-sm text-yellow-800">
+              <span className="font-semibold">🔒 Items Locked:</span> This order was created from an approved price offer. 
+              Only an admin can add or remove items.
+            </p>
+          </div>
+        )}
 
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -81,13 +115,13 @@ export default async function SalesOrderDetailsPage({ params }: { params: Promis
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Qty</th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Unit Price</th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Total</th>
-              {isDraft && <th className="px-4 py-3"></th>}
+              {canAddItems && <th className="px-4 py-3"></th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {order.items.length === 0 ? (
               <tr>
-                <td colSpan={isDraft ? 6 : 5} className="px-4 py-6 text-center text-sm text-gray-500">
+                <td colSpan={canAddItems ? 6 : 5} className="px-4 py-6 text-center text-sm text-gray-500">
                   No items added yet.
                 </td>
               </tr>
@@ -97,9 +131,9 @@ export default async function SalesOrderDetailsPage({ params }: { params: Promis
                   <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">{item.product.name}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{item.product.sku}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{item.quantity}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{item.unitPrice.toNumber().toFixed(2)} EGP</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">{item.lineTotal.toNumber().toFixed(2)} EGP</td>
-                  {isDraft && (
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">${item.unitPrice.toNumber().toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">${item.lineTotal.toNumber().toFixed(2)}</td>
+                  {canAddItems && (
                     <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
                       <form action={removeOrderItem}>
                         <input type="hidden" name="itemId" value={item.id} />
@@ -125,18 +159,10 @@ export default async function SalesOrderDetailsPage({ params }: { params: Promis
           </form>
         </div>
       )}
-            {order.status === "CONFIRMED" && (
-        <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 p-4">
-          <p className="text-green-800 font-medium">
-            This order has been confirmed and stock has been deducted.
-          </p>
-          <Link 
-            href={`/invoice/${order.id}`} 
-            target="_blank"
-            className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900 shadow-sm"
-          >
-            View / Print Invoice
-          </Link>
+      
+      {order.status === "CONFIRMED" && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center text-green-800">
+          This order has been confirmed and stock has been deducted.
         </div>
       )}
     </div>

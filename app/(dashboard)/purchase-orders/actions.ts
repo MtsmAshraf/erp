@@ -89,6 +89,61 @@ export async function removePOItem(formData: FormData) {
   revalidatePath(`/purchase-orders/${purchaseOrderId}`)
 }
 
+export async function submitPOForApproval(formData: FormData) {
+  await requireRole("ADMIN", "STAFF")
+  const purchaseOrderId = formData.get("purchaseOrderId") as string
+
+  const po = await prisma.purchaseOrder.findUnique({ where: { id: purchaseOrderId } })
+  if (!po || po.status !== "DRAFT") throw new Error("Invalid purchase order")
+  if (po.total.toNumber() <= 0) throw new Error("Cannot submit an empty purchase order")
+
+  await prisma.purchaseOrder.update({
+    where: { id: purchaseOrderId },
+    data: { status: "PENDING_APPROVAL" }
+  })
+
+  revalidatePath(`/purchase-orders/${purchaseOrderId}`)
+  revalidatePath("/purchase-orders")
+}
+
+export async function approvePO(formData: FormData) {
+  const session = await requireRole("ADMIN") // ADMIN ONLY
+  const purchaseOrderId = formData.get("purchaseOrderId") as string
+
+  const po = await prisma.purchaseOrder.findUnique({ where: { id: purchaseOrderId } })
+  if (!po || po.status !== "PENDING_APPROVAL") throw new Error("Invalid purchase order")
+
+  await prisma.purchaseOrder.update({
+    where: { id: purchaseOrderId },
+    data: { 
+      status: "APPROVED",
+      approvedById: session.user.id
+    }
+  })
+
+  revalidatePath(`/purchase-orders/${purchaseOrderId}`)
+  revalidatePath("/purchase-orders")
+}
+
+export async function rejectPO(formData: FormData) {
+  const session = await requireRole("ADMIN") // ADMIN ONLY
+  const purchaseOrderId = formData.get("purchaseOrderId") as string
+
+  const po = await prisma.purchaseOrder.findUnique({ where: { id: purchaseOrderId } })
+  if (!po || po.status !== "PENDING_APPROVAL") throw new Error("Invalid purchase order")
+
+  await prisma.purchaseOrder.update({
+    where: { id: purchaseOrderId },
+    data: { 
+      status: "REJECTED",
+      approvedById: session.user.id
+    }
+  })
+
+  revalidatePath(`/purchase-orders/${purchaseOrderId}`)
+  revalidatePath("/purchase-orders")
+}
+
 export async function confirmPurchaseOrder(formData: FormData) {
   await requireRole("ADMIN", "STAFF")
   const purchaseOrderId = formData.get("purchaseOrderId") as string
@@ -98,10 +153,11 @@ export async function confirmPurchaseOrder(formData: FormData) {
     include: { items: { include: { product: true } } }
   })
 
-  if (!po || po.status !== "DRAFT") throw new Error("Invalid purchase order")
+  if (!po || po.status !== "APPROVED") {
+    throw new Error("Purchase order must be approved before confirming")
+  }
   if (po.items.length === 0) throw new Error("Cannot confirm an empty purchase order")
 
-  // Atomic transaction: update status, create stock movements, increment stock
   await prisma.$transaction(async (tx) => {
     await tx.purchaseOrder.update({
       where: { id: purchaseOrderId },
@@ -109,7 +165,6 @@ export async function confirmPurchaseOrder(formData: FormData) {
     })
 
     for (const item of po.items) {
-      // Create the immutable ledger entry
       await tx.stockMovement.create({
         data: {
           productId: item.productId,
@@ -120,7 +175,6 @@ export async function confirmPurchaseOrder(formData: FormData) {
         }
       })
 
-      // Increment the cached stock level
       await tx.product.update({
         where: { id: item.productId },
         data: {

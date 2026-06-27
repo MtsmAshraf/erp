@@ -8,7 +8,8 @@ import { Search } from "lucide-react"
 
 export default async function SalesOrdersPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   await requireRole("ADMIN", "STAFF")
-  
+
+  const session = await requireRole("ADMIN", "STAFF")
   const params = await searchParams
   const currentPage = Number(params.page) || 1
   const searchQuery = (params.search as string) || ""
@@ -44,12 +45,14 @@ export default async function SalesOrdersPage({ searchParams }: { searchParams: 
           >
             ↓ Export CSV
           </a>
-          <Link
-            href="/sales-orders/new"
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            + New Order
-          </Link>
+          {session.user.role === "ADMIN" && (
+            <Link
+              href="/sales-orders/new"
+              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              + New Order
+            </Link>
+          )}
         </div>
       </div>
 

@@ -164,19 +164,25 @@ export async function convertToSalesOrder(formData: FormData) {
 
   if (!offer || offer.status !== "APPROVED") throw new Error("Offer must be approved first")
 
+  // STAFF can only convert their own offers
+  if (session.user.role === "STAFF" && offer.createdById !== session.user.id) {
+    throw new Error("You can only convert your own offers")
+  }
+
   // Generate Sales Order number
   const orderCount = await prisma.salesOrder.count()
   const orderNumber = `SO-${String(orderCount + 1).padStart(4, '0')}`
 
   await prisma.$transaction(async (tx) => {
-    // 1. Create the Sales Order
+    // 1. Create the Sales Order linked to the offer
     const salesOrder = await tx.salesOrder.create({
       data: {
         orderNumber,
         customerId: offer.customerId,
         createdById: session.user.id,
         status: "DRAFT",
-        total: offer.total
+        total: offer.total,
+        convertedFromOfferId: offer.id // LINK BACK TO THE OFFER
       }
     })
 

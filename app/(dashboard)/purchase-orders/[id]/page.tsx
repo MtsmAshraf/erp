@@ -1,21 +1,22 @@
 import { prisma } from "@/app/lib/prisma"
 import { requireRole } from "@/app/lib/auth-utils"
 import { notFound } from "next/navigation"
-import { removePOItem, confirmPurchaseOrder } from "../actions"
+import { removePOItem, submitPOForApproval, approvePO, rejectPO, confirmPurchaseOrder } from "../actions"
 import { AddPOItemForm } from "../AddPOItemForm"
 import Link from "next/link"
-import { serialize } from "v8"
 import { serializeProduct } from "@/app/lib/utils"
 
 export default async function PurchaseOrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  await requireRole("ADMIN", "STAFF")
+  const session = await requireRole("ADMIN", "STAFF")
+  const isAdmin = session.user.role === "ADMIN"
 
   const po = await prisma.purchaseOrder.findUnique({
     where: { id },
     include: {
       supplier: true,
       createdBy: { select: { name: true } },
+      approvedBy: { select: { name: true } },
       items: {
         include: { product: true }
       }
@@ -24,8 +25,18 @@ export default async function PurchaseOrderDetailsPage({ params }: { params: Pro
 
   if (!po) notFound()
 
-  const products = (await prisma.product.findMany({ orderBy: { name: "asc" } })).map(p => serializeProduct(p))
+  const products = (await prisma.product.findMany({ orderBy: { name: "asc" } }))
+  .map(product => serializeProduct(product))
+
   const isDraft = po.status === "DRAFT"
+  const isPending = po.status === "PENDING_APPROVAL"
+  const isApproved = po.status === "APPROVED"
+  const isRejected = po.status === "REJECTED"
+  const isConfirmed = po.status === "CONFIRMED"
+
+  // Can edit only if DRAFT and (is admin OR is the creator)
+  const canEdit = isDraft && (isAdmin || po.createdById === session.user.id)
+  const canSubmit = isDraft && po.total.toNumber() > 0 && (isAdmin || po.createdById === session.user.id)
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -37,13 +48,25 @@ export default async function PurchaseOrderDetailsPage({ params }: { params: Pro
           <h1 className="text-2xl font-bold text-gray-900">Purchase Order {po.poNumber}</h1>
           <span className={`rounded-full px-3 py-1 text-sm font-semibold ${
             po.status === "DRAFT" ? "bg-gray-100 text-gray-800" : 
+            po.status === "PENDING_APPROVAL" ? "bg-yellow-100 text-yellow-800" : 
+            po.status === "APPROVED" ? "bg-blue-100 text-blue-800" : 
+            po.status === "REJECTED" ? "bg-red-100 text-red-800" : 
             po.status === "CONFIRMED" ? "bg-green-100 text-green-800" : 
-            "bg-red-100 text-red-800"
+            "bg-gray-100 text-gray-800"
           }`}>
-            {po.status}
+            {po.status.replace(/_/g, " ")}
           </span>
         </div>
       </div>
+
+      {/* Approval Info */}
+      {(isApproved || isRejected) && po.approvedBy && (
+        <div className={`mb-6 rounded-lg border p-4 ${isApproved ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
+          <p className={`font-medium ${isApproved ? "text-green-800" : "text-red-800"}`}>
+            {isApproved ? "✓ Approved" : "✗ Rejected"} by {po.approvedBy.name}
+          </p>
+        </div>
+      )}
 
       <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-lg border bg-white p-4 shadow-sm">
@@ -55,12 +78,13 @@ export default async function PurchaseOrderDetailsPage({ params }: { params: Pro
           </p>
         </div>
         <div className="rounded-lg border bg-white p-4 shadow-sm">
-          <p className="text-sm text-gray-500">Date</p>
-          <p className="text-lg font-semibold text-gray-900">{po.createdAt.toLocaleDateString()}</p>
+          <p className="text-sm text-gray-500">Created By</p>
+          <p className="text-lg font-semibold text-gray-900">{po.createdBy.name}</p>
+          <p className="text-xs text-gray-500">{po.createdAt.toLocaleDateString()}</p>
         </div>
         <div className="rounded-lg border bg-white p-4 shadow-sm">
           <p className="text-sm text-gray-500">Total Cost</p>
-          <p className="text-2xl font-bold text-gray-900">{po.total.toNumber().toFixed(2)} EGP</p>
+          <p className="text-2xl font-bold text-gray-900">${po.total.toNumber().toFixed(2)}</p>
         </div>
       </div>
 
@@ -76,7 +100,15 @@ export default async function PurchaseOrderDetailsPage({ params }: { params: Pro
           <h2 className="text-lg font-bold text-gray-900">Items</h2>
         </div>
         
-        {isDraft && <AddPOItemForm purchaseOrderId={po.id} products={products} />}
+        {canEdit && <AddPOItemForm purchaseOrderId={po.id} products={products} />}
+
+        {isPending && !isAdmin && (
+          <div className="border-b bg-yellow-50 p-4">
+            <p className="text-sm text-yellow-800">
+              <span className="font-semibold">⏳ Pending Approval:</span> This purchase order is awaiting admin approval. Editing is locked.
+            </p>
+          </div>
+        )}
 
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -86,13 +118,13 @@ export default async function PurchaseOrderDetailsPage({ params }: { params: Pro
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Qty</th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Unit Cost</th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Total</th>
-              {isDraft && <th className="px-4 py-3"></th>}
+              {canEdit && <th className="px-4 py-3"></th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {po.items.length === 0 ? (
               <tr>
-                <td colSpan={isDraft ? 6 : 5} className="px-4 py-6 text-center text-sm text-gray-500">
+                <td colSpan={canEdit ? 6 : 5} className="px-4 py-6 text-center text-sm text-gray-500">
                   No items added yet.
                 </td>
               </tr>
@@ -102,9 +134,9 @@ export default async function PurchaseOrderDetailsPage({ params }: { params: Pro
                   <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">{item.product.name}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{item.product.sku}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{item.quantity}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{item.unitCost.toNumber().toFixed(2)} EGP</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">{item.lineTotal.toNumber().toFixed(2)} EGP</td>
-                  {isDraft && (
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">${item.unitCost.toNumber().toFixed(2)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">${item.lineTotal.toNumber().toFixed(2)}</td>
+                  {canEdit && (
                     <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
                       <form action={removePOItem}>
                         <input type="hidden" name="itemId" value={item.id} />
@@ -120,19 +152,56 @@ export default async function PurchaseOrderDetailsPage({ params }: { params: Pro
         </table>
       </div>
 
-      {isDraft && po.items.length > 0 && (
-        <div className="flex justify-end">
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-3">
+        {/* Submit for Approval */}
+        {canSubmit && (
+          <form action={submitPOForApproval}>
+            <input type="hidden" name="purchaseOrderId" value={po.id} />
+            <button type="submit" className="rounded bg-yellow-600 px-6 py-3 text-sm font-medium text-white hover:bg-yellow-700 shadow-sm">
+              Submit for Approval
+            </button>
+          </form>
+        )}
+
+        {/* Approve / Reject (Admin only, when pending) */}
+        {isPending && isAdmin && (
+          <>
+            <form action={approvePO}>
+              <input type="hidden" name="purchaseOrderId" value={po.id} />
+              <button type="submit" className="rounded bg-green-600 px-6 py-3 text-sm font-medium text-white hover:bg-green-700 shadow-sm">
+                ✓ Approve PO
+              </button>
+            </form>
+            <form action={rejectPO}>
+              <input type="hidden" name="purchaseOrderId" value={po.id} />
+              <button type="submit" className="rounded bg-red-600 px-6 py-3 text-sm font-medium text-white hover:bg-red-700 shadow-sm">
+                ✗ Reject PO
+              </button>
+            </form>
+          </>
+        )}
+
+        {/* Confirm & Receive Stock (when approved) */}
+        {isApproved && (
           <form action={confirmPurchaseOrder}>
             <input type="hidden" name="purchaseOrderId" value={po.id} />
-            <button type="submit" className="rounded bg-green-600 px-6 py-3 text-base font-medium text-white hover:bg-green-700 shadow-sm">
+            <button type="submit" className="rounded bg-blue-600 px-6 py-3 text-base font-medium text-white hover:bg-blue-700 shadow-sm">
               Confirm & Receive Stock
             </button>
           </form>
+        )}
+      </div>
+
+      {/* Pending message for STAFF */}
+      {isPending && !isAdmin && (
+        <div className="mt-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-center text-yellow-800">
+          This purchase order is pending admin approval. You will be able to confirm it once approved.
         </div>
       )}
 
-      {po.status === "CONFIRMED" && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center text-green-800">
+      {isConfirmed && (
+        <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4 text-center text-green-800">
           ✓ This purchase order has been confirmed and stock has been received.
         </div>
       )}
