@@ -1,7 +1,7 @@
 import { auth, signOut } from "@/auth"
 import { redirect } from "next/navigation"
-import Link from "next/link"
 import { LayoutDashboard, Package, Users, FileText, UserCog, LogOut, Truck, ShoppingCart } from "lucide-react"
+import { SidebarLink } from "./dashboard/SidebarLink"
 
 export default async function DashboardLayout({
   children,
@@ -56,17 +56,5 @@ export default async function DashboardLayout({
         <main className="flex-1 bg-gray-50 p-6">{children}</main>
       </div>
     </div>
-  )
-}
-
-function SidebarLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition hover:bg-gray-800 hover:text-white"
-    >
-      {icon}
-      {label}
-    </Link>
   )
 }

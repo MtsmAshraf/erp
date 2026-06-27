@@ -5,8 +5,8 @@ import "./globals.css"
 // const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Small Business ERP",
-  description: "Phase 1 Foundation",
+  title: "Smart Generation ERP System",
+  description: "Smart Generation ERP System",
 }
 
 export default function RootLayout({
