@@ -35,6 +35,9 @@ enum OfferStatus {
 
 enum PurchaseOrderStatus {
   DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
   CONFIRMED
   CANCELLED
 }
@@ -53,6 +56,7 @@ model User {
   
   createdOffers  PriceOffer[] @relation("OfferCreator")
   approvedOffers PriceOffer[] @relation("OfferApprover")
+  approvedPurchaseOrders PurchaseOrder[] @relation("POApprover")
 }
 
 model Product {
@@ -104,12 +108,14 @@ model SalesOrder {
   total         Decimal     @db.Decimal(10, 2) @default(0)
   createdById   String
   createdAt     DateTime    @default(now())
+  convertedFromOfferId String?  @unique // Links back to the PriceOffer if created from one
 
   // Relations
   customer  Customer    @relation(fields: [customerId], references: [id])
   createdBy User        @relation(fields: [createdById], references: [id])
   items     OrderItem[]
   stockMovements StockMovement[] // Optional link for STOCK_OUT movements tied to this order
+  convertedFromOffer PriceOffer? @relation("OfferToSalesOrder", fields: [convertedFromOfferId], references: [id])
 }
 
 model OrderItem {
@@ -154,6 +160,7 @@ model PriceOffer {
   notes                String?     // Optional notes/terms for the offer
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
+  convertedOrder SalesOrder? @relation("OfferToSalesOrder")
 
   // Relations
   customer   Customer           @relation(fields: [customerId], references: [id])
@@ -195,6 +202,8 @@ model PurchaseOrder {
   notes       String?
   createdById String
   createdAt   DateTime            @default(now())
+  approvedById String?
+  approvedBy   User? @relation("POApprover", fields: [approvedById], references: [id])
 
   supplier       Supplier            @relation(fields: [supplierId], references: [id])
   createdBy      User                @relation(fields: [createdById], references: [id])
