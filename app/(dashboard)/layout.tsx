@@ -16,11 +16,14 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-gray-300">
+      <aside className="sticky top-0 flex h-screen w-64 flex-col bg-gray-900 text-gray-300">
+        {/* Header */}
         <div className="flex h-16 items-center border-b border-gray-800 px-6">
           <span className="text-lg font-bold text-white">Smart Generation</span>
         </div>
-        <nav className="mt-6 space-y-1 px-3">
+
+        {/* Navigation - flex-1 pushes the footer to the bottom */}
+        <nav className="mt-6 flex-1 space-y-1 overflow-y-auto px-3">
           <SidebarLink href="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
           <SidebarLink href="/products" icon={<Package size={20} />} label="Products" />
           <SidebarLink href="/customers" icon={<Users size={20} />} label="Customers" />
@@ -32,6 +35,24 @@ export default async function DashboardLayout({
             <SidebarLink href="/users" icon={<UserCog size={20} />} label="User Management" />
           )}
         </nav>
+
+        {/* Footer / Copyright */}
+        <div className="border-t border-gray-800 px-6 py-4 text-center">
+          <p className="text-xs text-gray-500">
+            © {new Date().getFullYear()} Smart Generation
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            By:{" "}
+            <a
+              href="https://moatasimashraf.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-gray-300 transition hover:text-white underline"
+            >
+              Moatasim
+            </a>
+          </p>
+        </div>
       </aside>
 
       {/* Main Content */}
