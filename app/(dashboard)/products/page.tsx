@@ -5,8 +5,10 @@ import { PAGE_SIZE } from "@/app/lib/pagination"
 import Link from "next/link"
 import { Search } from "lucide-react"
 import { DeleteProductButton } from "./DeleteProductButton"
+import { requirePermission } from "@/app/lib/auth-utils"
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  await requirePermission("canViewProducts")
   const session = await requireRole("ADMIN", "STAFF")
   const isStaff = session.user.role === "STAFF"
   const isAdmin = session.user.role === "ADMIN"

@@ -57,6 +57,8 @@ model User {
   createdOffers  PriceOffer[] @relation("OfferCreator")
   approvedOffers PriceOffer[] @relation("OfferApprover")
   approvedPurchaseOrders PurchaseOrder[] @relation("POApprover")
+
+  permission Permission?
 }
 
 model Product {
@@ -221,4 +223,55 @@ model PurchaseOrderItem {
 
   purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   product       Product       @relation(fields: [productId], references: [id])
+}
+
+model Permission {
+  id        String @id @default(cuid())
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Page Access Permissions
+  canViewDashboard      Boolean @default(true)
+  canViewProducts       Boolean @default(true)
+  canViewCustomers      Boolean @default(true)
+  canViewSuppliers      Boolean @default(true)
+  canViewPurchaseOrders Boolean @default(true)
+  canViewPriceOffers    Boolean @default(true)
+  canViewSalesOrders    Boolean @default(true)
+  canViewUsers          Boolean @default(false)
+  
+  // Product Permissions
+  canCreateProducts Boolean @default(false)
+  canEditProducts   Boolean @default(false)
+  canDeleteProducts Boolean @default(false)
+  canAdjustStock    Boolean @default(false)
+  
+  // Customer Permissions
+  canCreateCustomers Boolean @default(true)
+  canEditCustomers   Boolean @default(true)
+  
+  // Supplier Permissions
+  canCreateSuppliers Boolean @default(false)
+  canEditSuppliers   Boolean @default(false)
+  
+  // Purchase Order Permissions
+  canCreatePurchaseOrders Boolean @default(false)
+  canApprovePurchaseOrders Boolean @default(false)
+  canConfirmPurchaseOrders Boolean @default(false)
+  
+  // Price Offer Permissions
+  canCreatePriceOffers Boolean @default(true)
+  canApprovePriceOffers Boolean @default(false)
+  canConvertPriceOffers Boolean @default(true)
+  
+  // Sales Order Permissions
+  canCreateSalesOrders Boolean @default(false)
+  canConfirmSalesOrders Boolean @default(true)
+  
+  // User Management Permissions
+  canCreateUsers Boolean @default(false)
+  canDeleteUsers Boolean @default(false)
+  
+  // Export Permissions
+  canExportData Boolean @default(true)
 }

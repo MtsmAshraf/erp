@@ -1,6 +1,7 @@
 import { prisma } from "@/app/lib/prisma"
 import { requireRole } from "@/app/lib/auth-utils"
 import Link from "next/link"
+import { requirePermission } from "@/app/lib/auth-utils"
 import { 
   Package, 
   Users, 
@@ -15,6 +16,7 @@ import {
 } from "lucide-react"
 
 export default async function DashboardPage() {
+  await requirePermission("canViewDashboard")
   const session = await requireRole("ADMIN", "STAFF")
   const isAdmin = session.user.role === "ADMIN"
 

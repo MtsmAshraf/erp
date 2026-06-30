@@ -2,8 +2,10 @@ import { prisma } from "@/app/lib/prisma"
 import { requireRole } from "@/app/lib/auth-utils"
 import Link from "next/link"
 import { DeleteUserButton } from "./DeleteUserButton"
+import { requirePermission } from "@/app/lib/auth-utils"
 
 export default async function UsersPage() {
+  await requirePermission("canViewUsers")
   await requireRole("ADMIN")
   
   const users = await prisma.user.findMany({
@@ -46,7 +48,13 @@ export default async function UsersPage() {
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{user.createdAt.toLocaleDateString()}</td>
-                <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
+                <td className="whitespace-nowrap px-6 py-4 text-right text-sm space-x-3">
+                  <Link 
+                    href={`/users/${user.id}/permissions`} 
+                    className="text-blue-600 hover:text-blue-900 font-medium"
+                  >
+                    Permissions
+                  </Link>
                   <DeleteUserButton userId={user.id} />
                 </td>
               </tr>

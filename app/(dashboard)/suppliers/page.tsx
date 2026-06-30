@@ -2,8 +2,10 @@ import { prisma } from "@/app/lib/prisma"
 import { requireRole } from "@/app/lib/auth-utils"
 import Link from "next/link"
 import { DeleteSupplierButton } from "./DeleteSupplierButton"
+import { requirePermission } from "@/app/lib/auth-utils"
 
 export default async function SuppliersPage() {
+  await requirePermission("canViewSuppliers")
   const session = await requireRole("ADMIN", "STAFF")
   const isAdmin = session.user.role === "ADMIN"
 

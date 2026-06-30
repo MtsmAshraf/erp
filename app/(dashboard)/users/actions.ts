@@ -55,3 +55,64 @@ export async function deleteUser(formData: FormData) {
   await prisma.user.delete({ where: { id: userId } })
   revalidatePath("/users")
 }
+
+export async function updateUserPermissions(
+  prevState: { success: boolean; message: string } | null,
+  formData: FormData
+) {
+  "use server"
+  
+  try {
+    await requireRole("ADMIN")
+    
+    const targetUserId = formData.get("userId") as string
+
+    // Extract all permission fields from form data
+    const permissionData = {
+      canViewDashboard: formData.get("canViewDashboard") === "on",
+      canViewProducts: formData.get("canViewProducts") === "on",
+      canViewCustomers: formData.get("canViewCustomers") === "on",
+      canViewSuppliers: formData.get("canViewSuppliers") === "on",
+      canViewPurchaseOrders: formData.get("canViewPurchaseOrders") === "on",
+      canViewPriceOffers: formData.get("canViewPriceOffers") === "on",
+      canViewSalesOrders: formData.get("canViewSalesOrders") === "on",
+      canViewUsers: formData.get("canViewUsers") === "on",
+      canCreateProducts: formData.get("canCreateProducts") === "on",
+      canEditProducts: formData.get("canEditProducts") === "on",
+      canDeleteProducts: formData.get("canDeleteProducts") === "on",
+      canAdjustStock: formData.get("canAdjustStock") === "on",
+      canCreateCustomers: formData.get("canCreateCustomers") === "on",
+      canEditCustomers: formData.get("canEditCustomers") === "on",
+      canCreateSuppliers: formData.get("canCreateSuppliers") === "on",
+      canEditSuppliers: formData.get("canEditSuppliers") === "on",
+      canCreatePurchaseOrders: formData.get("canCreatePurchaseOrders") === "on",
+      canApprovePurchaseOrders: formData.get("canApprovePurchaseOrders") === "on",
+      canConfirmPurchaseOrders: formData.get("canConfirmPurchaseOrders") === "on",
+      canCreatePriceOffers: formData.get("canCreatePriceOffers") === "on",
+      canApprovePriceOffers: formData.get("canApprovePriceOffers") === "on",
+      canConvertPriceOffers: formData.get("canConvertPriceOffers") === "on",
+      canCreateSalesOrders: formData.get("canCreateSalesOrders") === "on",
+      canConfirmSalesOrders: formData.get("canConfirmSalesOrders") === "on",
+      canCreateUsers: formData.get("canCreateUsers") === "on",
+      canDeleteUsers: formData.get("canDeleteUsers") === "on",
+      canExportData: formData.get("canExportData") === "on",
+    }
+
+    await prisma.permission.upsert({
+      where: { userId: targetUserId },
+      update: permissionData,
+      create: {
+        userId: targetUserId,
+        ...permissionData,
+      },
+    })
+
+    revalidatePath("/users")
+    revalidatePath(`/users/${targetUserId}/permissions`)
+    
+    return { success: true, message: "Permissions saved successfully!" }
+  } catch (error) {
+    console.error("Error saving permissions:", error)
+    return { success: false, message: "Failed to save permissions. Please try again." }
+  }
+}

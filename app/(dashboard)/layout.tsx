@@ -2,6 +2,7 @@ import { auth, signOut } from "@/auth"
 import { redirect } from "next/navigation"
 import { LayoutDashboard, Package, Users, FileText, UserCog, LogOut, Truck, ShoppingCart } from "lucide-react"
 import { SidebarLink } from "./dashboard/SidebarLink"
+import { getUserPermissions } from "@/app/lib/auth-utils"
 
 export default async function DashboardLayout({
   children,
@@ -11,7 +12,14 @@ export default async function DashboardLayout({
   const session = await auth()
   if (!session) redirect("/login")
 
-  const isAdmin = session.user.role === "ADMIN"
+  // Fetch user permissions
+  const permissions = await getUserPermissions()
+
+  // If no permission record exists, redirect to login
+  // (This shouldn't happen if seed worked correctly, but it's a safety check)
+  if (!permissions) {
+    redirect("/login")
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -22,16 +30,30 @@ export default async function DashboardLayout({
           <span className="text-lg font-bold text-white">Smart Generation</span>
         </div>
 
-        {/* Navigation - flex-1 pushes the footer to the bottom */}
+        {/* Navigation - Filtered by permissions */}
         <nav className="mt-6 flex-1 space-y-1 overflow-y-auto px-3">
-          <SidebarLink href="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
-          <SidebarLink href="/products" icon={<Package size={20} />} label="Products" />
-          <SidebarLink href="/customers" icon={<Users size={20} />} label="Customers" />
-          <SidebarLink href="/suppliers" icon={<Truck size={20} />} label="Suppliers" />
-          <SidebarLink href="/purchase-orders" icon={<ShoppingCart size={20} />} label="Purchase Orders" />
-          <SidebarLink href="/price-offers" icon={<FileText size={20} />} label="Price Offers" />
-          <SidebarLink href="/sales-orders" icon={<FileText size={20} />} label="Sales Orders" />
-          {isAdmin && (
+          {permissions.canViewDashboard && (
+            <SidebarLink href="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
+          )}
+          {permissions.canViewProducts && (
+            <SidebarLink href="/products" icon={<Package size={20} />} label="Products" />
+          )}
+          {permissions.canViewCustomers && (
+            <SidebarLink href="/customers" icon={<Users size={20} />} label="Customers" />
+          )}
+          {permissions.canViewSuppliers && (
+            <SidebarLink href="/suppliers" icon={<Truck size={20} />} label="Suppliers" />
+          )}
+          {permissions.canViewPurchaseOrders && (
+            <SidebarLink href="/purchase-orders" icon={<ShoppingCart size={20} />} label="Purchase Orders" />
+          )}
+          {permissions.canViewPriceOffers && (
+            <SidebarLink href="/price-offers" icon={<FileText size={20} />} label="Price Offers" />
+          )}
+          {permissions.canViewSalesOrders && (
+            <SidebarLink href="/sales-orders" icon={<FileText size={20} />} label="Sales Orders" />
+          )}
+          {permissions.canViewUsers && (
             <SidebarLink href="/users" icon={<UserCog size={20} />} label="User Management" />
           )}
         </nav>

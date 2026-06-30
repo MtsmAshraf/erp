@@ -1,8 +1,10 @@
 import { prisma } from "@/app/lib/prisma"
 import { requireRole } from "@/app/lib/auth-utils"
 import Link from "next/link"
+import { requirePermission } from "@/app/lib/auth-utils"
 
 export default async function CustomersPage() {
+  await requirePermission("canViewCustomers")
   await requireRole("ADMIN", "STAFF")
   const customers = await prisma.customer.findMany({
     orderBy: { createdAt: "desc" }

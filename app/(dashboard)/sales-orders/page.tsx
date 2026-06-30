@@ -5,8 +5,10 @@ import { Pagination } from "@/components/Pagination"
 import { PAGE_SIZE } from "@/app/lib/pagination"
 import Link from "next/link"
 import { Search } from "lucide-react"
+import { requirePermission } from "@/app/lib/auth-utils"
 
 export default async function SalesOrdersPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  await requirePermission("canViewSalesOrders")
   await requireRole("ADMIN", "STAFF")
 
   const session = await requireRole("ADMIN", "STAFF")
